@@ -46,7 +46,8 @@ class RouterTest extends TestCase
         $bases = ['', '/subdir'];
 
         foreach ($bases as $base) {
-            Piko::setAlias('@web', $base);
+            $router->baseUri = $base;
+
             $_SERVER['REQUEST_URI'] = $base . '/';
             $this->assertEquals('test/test/index', $router->resolve());
 
@@ -113,7 +114,7 @@ class RouterTest extends TestCase
         $bases = ['', '/subdir'];
 
         foreach ($bases as $base) {
-            Piko::setAlias('@web', $base);
+            $router->baseUri = $base;
 
             // '^/$' => 'test/test/index'
             $this->assertEquals($base . '/', $router->getUrl('test/test/index'));
@@ -177,10 +178,10 @@ class RouterTest extends TestCase
     {
         $_SERVER['REQUEST_SCHEME'] = 'https';
         $_SERVER['HTTP_HOST'] = 'www.sphilip.com';
-        Piko::setAlias('@web', '');
 
         /* @var $router \piko\Router */
         $router = Piko::get('router');
+        $router->baseUri = '';
 
         // '^/user/(\d+)' => 'user/default/view|id=$1'
         $this->assertEquals('https://www.sphilip.com/user/2',  $router->getUrl('user/default/view', ['id' => 2], true));
