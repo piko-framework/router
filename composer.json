@@ -1,0 +1,41 @@
+{
+  "name" : "piko/router",
+  "description" : "A fast micro router used in Piko framework",
+  "keywords" : [
+    "micro-router",
+    "micro",
+    "router"
+  ],
+  "authors" : [{
+      "name" : "Sylvain Philip",
+      "homepage" : "https://www.sphilip.com",
+      "role" : "Developer"
+    }
+  ],
+  "homepage" : "https://github.com/piko-framework/core",
+  "license" : "LGPL-3.0-or-later",
+  "require" : {
+    "php" : ">=7.1.0",
+    "piko/core": "^1.0"
+  },
+  "autoload" : {
+      "psr-4" : {
+      "piko\\" : "src"
+    }
+  },
+  "require-dev" : {
+    "phpunit/phpunit" : "^9.5",
+    "squizlabs/php_codesniffer" : "^3.5",
+    "phpstan/phpstan": "^0.12.99"
+  },
+  "scripts" : {
+    "test": [
+      "@phpunit",
+      "@phpcs",
+      "@phpstan"
+    ],
+    "phpunit" : "phpunit",
+    "phpcs" : "phpcs --standard=./coding-standard  src",
+    "phpstan" : "phpstan"
+  }
+}
