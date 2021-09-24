@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of Piko - Web micro framework
  *
@@ -6,10 +7,11 @@
  * @license LGPL-3.0; see LICENSE.txt
  * @link https://github.com/piko-framework/piko
  */
+
 namespace piko;
 
 /**
- * Base application router.
+ * Router class.
  *
  * @author Sylvain PHILIP <contact@sphilip.com>
  */
@@ -32,14 +34,24 @@ class Router extends Component
      * eg. `'^/user/(\d+)' => 'site/user/view|id=$1'` The router will populate `$_GET`
      * with 'id' = The user id in the uri.
      *
-     * @var array
+     * @var array<string>
      * @see preg_replace()
      */
     public $routes = [];
 
     /**
+     * Base uri
+     *
+     * The base uri is the base part of the request uri which shouldn't be parsed.
+     * Example for /home/blog/page : if the $baseUri is /home, the router will parse /blog/page
+     *
+     * @var string
+     */
+    public $baseUri = '';
+
+    /**
      * Internal cache for routes uris
-     * @var array
+     * @var array<array>
      */
     protected $cache = [];
 
@@ -52,7 +64,8 @@ class Router extends Component
     public function resolve()
     {
         $route = '';
-        $uri = str_replace(Piko::getAlias('@web'), '', $_SERVER['REQUEST_URI']);
+
+        $uri = str_replace($this->baseUri, '', $_SERVER['REQUEST_URI']);
 
         if (($start = strpos($uri, '?')) !== false) {
             $uri = substr($uri, 0, $start);
@@ -95,7 +108,7 @@ class Router extends Component
      * Convert a route to an url.
      *
      * @param string $route The route given as '{moduleId}/{controllerId}/{ationId}'.
-     * @param array $params Optional query parameters.
+     * @param array<string,int> $params Optional query parameters.
      * @param boolean $absolute Optional to have an absolute url.
      * @return string The url.
      */
@@ -120,7 +133,7 @@ class Router extends Component
                     /* When the query is dynamic.
                      * Ex: $params == ['alias' => 'page-2'] && $query == ['alias' => '$1']
                      */
-                    $pos = (int) $val[$pos+1];
+                    $pos = (int) $val[$pos + 1];
                     $replace[$pos] =  $params[$key];
                 } elseif (!isset($params[$key]) || $params[$key] != $val) {
                     /* When the query is static.
@@ -151,17 +164,17 @@ class Router extends Component
         $this->trigger('afterBuildUri', [&$uri]);
 
         if ($absolute) {
-            return $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . Piko::getAlias('@web') . $uri;
+            return $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $this->baseUri . $uri;
         }
 
-        return Piko::getAlias('@web') . $uri;
+        return $this->baseUri . $uri;
     }
 
     /**
      * Retrieve all the uris rattached to the route
      *
      * @param string $route
-     * @return array
+     * @return array<string>
      */
     protected function getRouteUris(string $route): array
     {
@@ -191,7 +204,7 @@ class Router extends Component
                 foreach ($routePatternParts as $k => &$part) {
 
                     if (($pos = strpos($part, '$')) !== false && isset($routeParts[$k])) {
-                        $replace[(int) $part[$pos+1]] = $routeParts[$k];
+                        $replace[(int) $part[$pos + 1]] = $routeParts[$k];
                         $part = $routeParts[$k];
                     }
                 }
