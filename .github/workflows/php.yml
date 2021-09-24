@@ -30,7 +30,7 @@ jobs:
       run: composer install --prefer-dist --no-progress
       
     - name: Check coding standards
-      run: vendor/bin/phpcs --standard=./coding-standard src
+      run: vendor/bin/phpcs --standard=vendor/piko/core/coding-standard src
       
     - name: Code Analysis
       run: vendor/bin/phpstan
