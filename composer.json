@@ -12,7 +12,7 @@
       "role" : "Developer"
     }
   ],
-  "homepage" : "https://github.com/piko-framework/core",
+  "homepage" : "https://github.com/piko-framework/router",
   "license" : "LGPL-3.0-or-later",
   "require" : {
     "php" : ">=7.1.0",
