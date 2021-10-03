@@ -29,7 +29,7 @@ $router->addRoute('/user/:id', 'userView');
 $match = $router->resolve('/');
 echo $match->handler // homeView
 
-$match = $router->resolve('/user/10'); // user/view
+$match = $router->resolve('/user/10');
 echo $match->handler // userView
 echo $match->params['id'] // 10
 
