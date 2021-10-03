@@ -1,189 +1,154 @@
 <?php
-namespace tests;
-
 use PHPUnit\Framework\TestCase;
-
-use piko\Piko;
 use piko\Router;
 
 class RouterTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
+    /**
+     * @var Router
+     */
+    private $router;
+
+    protected function setUp(): void
     {
-        $router = new Router([
+        $_SERVER['REQUEST_SCHEME'] = 'https';
+        $_SERVER['HTTP_HOST'] = 'www.sphilip.com';
+
+        $this->router = new Router([
             'routes' => [
-                '^/$' => 'test/test/index',
-                '^/user/(\d+)' => 'user/default/view|id=$1',
-                '^/portfolio/(\w+)/(\d+)' => 'portfolio/default/view|alias=$1&category=$2',
-                '^/page-1' => 'page/default/view|alias=page-1',
-                '^/page-2' => 'page/default/view|alias=page-2',
-                '^/([\w-]+)$' => 'page/default/view|alias=$1',
-                '^/api/even' => 'api/event/index',
-                '^/blog/year/(\d+)$' => 'site/index/index|filter=year&slug=$1',
-                '^/blog/category/(\w+)$' => 'site/index/index|filter=category&slug=$1',
-                '^/admin/shop/(\w+)/(\w+)/(\d+)' => 'shop/admin/$1/$2|id=$3',
-                '^/admin/(\w+)/(\w+)/(\d+)' => '$1/admin/$2|id=$3',
-                '^/events/(\w+)/(\w+)/(\d+)' => 'events/$2/$1|id=$3',
-                '^/(\w+)/(\w+)/(\w+)$' => '$1/$2/$3',
-                '^/(\w+)/(\w+)/(\w+)/(\w+)$' => '$1/$2/$3/$4',
-                '^/(\w+)/(\w+)/(\w+)/(\w+)/(\w+)$' => '$1/$2/$3/$4/$5',
+                '/' => 'test/test/index',
+                '/user/:id' => 'user/default/view',
+                '/user/add' => 'user/admin/add',
+                '/partner/:name' => 150,
+                '/gallery/:ref' => function($params) { return $params['ref']; },
+                '/portfolio/:alias/:category' => 'portfolio/default/view',
+                '/admin/:module/:action' => ':module/admin/:action',
+                '/:page' => 'page/default/view',
+                '/:module/:controller/:action' => ':module/:controller/:action',
             ]
         ]);
-
-        Piko::set('router', $router);
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-       Piko::reset();
     }
 
     public function testResolve()
     {
-        /* @var $router \piko\Router */
-        $router = Piko::get('router');
-
         $bases = ['', '/subdir'];
 
         foreach ($bases as $base) {
-            $router->baseUri = $base;
+            $this->router->baseUri = $base;
 
-            $_SERVER['REQUEST_URI'] = $base . '/';
-            $this->assertEquals('test/test/index', $router->resolve());
+            // Test static routes
+            $match = $this->router->resolve($base . '/');
+            $this->assertTrue($match->found);
+            $this->assertEquals('test/test/index', $match->handler);
 
-            $_SERVER['REQUEST_URI'] = $base . '/user/10';
-            $this->assertEquals('user/default/view', $router->resolve());
-            $this->assertEquals(10, $_GET['id']);
+            $match = $this->router->resolve($base . '/user/add');
+            $this->assertEquals('user/admin/add', $match->handler);
 
-            $_SERVER['REQUEST_URI'] = $base . '/portfolio/toto/5';
-            $this->assertEquals('portfolio/default/view', $router->resolve());
-            $this->assertEquals(5, $_GET['category']);
-            $this->assertEquals('toto', $_GET['alias']);
+            // Test dynamic routes
+            $match = $this->router->resolve($base . '/user/10');
+            $this->assertEquals('user/default/view', $match->handler);
+            $this->assertEquals('10', $match->params['id']);
 
-            $_SERVER['REQUEST_URI'] = $base . '/page-1';
-            $this->assertEquals('page/default/view', $router->resolve());
-            $this->assertEquals('page-1', $_GET['alias']);
+            $match = $this->router->resolve($base . '/portfolio/toto/5');
+            $this->assertEquals('portfolio/default/view', $match->handler);
+            $this->assertEquals('5', $match->params['category']);
+            $this->assertEquals('toto', $match->params['alias']);
 
-            $_SERVER['REQUEST_URI'] = $base . '/page-2';
-            $this->assertEquals('page/default/view', $router->resolve());
-            $this->assertEquals('page-2', $_GET['alias']);
+            $match = $this->router->resolve($base . '/admin/shop/edit?id=14');
+            $this->assertEquals('shop/admin/edit', $match->handler);
+            $this->assertEquals('14', $match->params['id']);
 
-            $_SERVER['REQUEST_URI'] = $base . '/page-3';
-            $this->assertEquals('page/default/view', $router->resolve());
-            $this->assertEquals('page-3', $_GET['alias']);
+            // Test with numeric handler
+            $match = $this->router->resolve($base . '/partner/toto');
+            $this->assertEquals(150, $match->handler);
+            $this->assertEquals('toto', $match->params['name']);
 
-            $_SERVER['REQUEST_URI'] = $base . '/blog/default/index?filter=perso';
-            $this->assertEquals('blog/default/index', $router->resolve());
+            // Test with callable handler
+            $match = $this->router->resolve($base . '/gallery/toto');
+            $this->assertEquals('toto', call_user_func($match->handler, $match->params));
 
-            $_SERVER['REQUEST_URI'] = $base . '/admin/user/edit/5';
-            $this->assertEquals('user/admin/edit', $router->resolve());
+            // Test fully dynamic routes
+            $match = $this->router->resolve($base . '/page-1');
+            $this->assertEquals('page/default/view', $match->handler);
+            $this->assertEquals('page-1', $match->params['page']);
 
-            $_SERVER['REQUEST_URI'] = $base . '/admin/shop/products/edit/5';
-            $this->assertEquals('shop/admin/products/edit', $router->resolve());
-
-            $_SERVER['REQUEST_URI'] = $base . '/api/event';
-            $this->assertEquals('api/event/index', $router->resolve());
-
-            $_SERVER['REQUEST_URI'] = $base . '/events/edit/user/15';
-            $this->assertEquals('events/user/edit', $router->resolve());
-            $this->assertEquals('15', $_GET['id']);
-
-            $_SERVER['REQUEST_URI'] = $base . '/blog/year/2023';
-            $this->assertEquals('site/index/index', $router->resolve());
-            $this->assertEquals('year', $_GET['filter']);
-            $this->assertEquals('2023', $_GET['slug']);
-
-            $_SERVER['REQUEST_URI'] = $base . '/blog/category/tutu';
-            $this->assertEquals('site/index/index', $router->resolve());
-            $this->assertEquals('category', $_GET['filter']);
-            $this->assertEquals('tutu', $_GET['slug']);
-
-            $_SERVER['REQUEST_URI'] = $base . '/test/sub/test/index';
-            $this->assertEquals('test/sub/test/index', $router->resolve());
-
-            $_SERVER['REQUEST_URI'] = $base . '/test/sub/til/test/index';
-            $this->assertEquals('test/sub/til/test/index', $router->resolve());
+            $match = $this->router->resolve($base . '/events/admin/add');
+            $this->assertEquals('events/admin/add', $match->handler);
+            $this->assertEquals('events', $match->params['module']);
+            $this->assertEquals('admin', $match->params['controller']);
+            $this->assertEquals('add', $match->params['action']);
         }
+
+        // Change already declared route
+        $this->router->addRoute('/user/:id', 'site/user/view');
+        $match = $this->router->resolve('/user/11');
+        $this->assertEquals('site/user/view', $match->handler);
+        $this->assertEquals('11', $match->params['id']);
+
+        // Test with route folowwed by param
+        $this->router->addRoute('/use:id', 'site/use');
+        $match = $this->router->resolve('/use20');
+        $this->assertEquals('site/use', $match->handler);
+        $this->assertEquals('20', $match->params['id']);
+
+        // Test with same prefix
+        $this->router->addRoute('/use:i', 'site/use');
+        $match = $this->router->resolve('/use20');
+        $this->assertEquals('site/use', $match->handler);
+        $this->assertEquals('20', $match->params['i']);
     }
 
-    public function testGetUrl()
+    public function  testDuplicateParam()
     {
-        /* @var $router \piko\Router */
-        $router = Piko::get('router');
+        $this->router->addRoute('/user/:alias', 'user/default/view');
+        $this->expectException('RuntimeException');
+        $this->expectExceptionMessage('Cannot determine param for the route parts: user/:id, user/:alias');
+        $this->router->resolve('/user/john');
+    }
 
+    public function testReverseRouting()
+    {
         $bases = ['', '/subdir'];
 
         foreach ($bases as $base) {
-            $router->baseUri = $base;
+            $this->router->baseUri = $base;
 
-            // '^/$' => 'test/test/index'
-            $this->assertEquals($base . '/', $router->getUrl('test/test/index'));
+            // '/' => 'test/test/index'
+            $this->assertEquals($base . '/', $this->router->getUrl('test/test/index'));
 
-            // '^/user/(\d+)' => 'user/default/view|id=$1'
-            $this->assertEquals($base . '/user/2',  $router->getUrl('user/default/view', ['id' => 2]));
+            // '/user/:id' => 'user/default/view'
+            $this->assertEquals($base . '/user/2',  $this->router->getUrl('user/default/view', ['id' => 2]));
 
-            // '^/portfolio/(\w+)/(\d+)' => 'portfolio/default/view|alias=$1&category=$2'
-            $this->assertEquals($base . '/portfolio/toto/5', $router->getUrl(
+            // '/user/add' => 'user/admin/add'
+            $this->assertEquals($base . '/user/add', $this->router->getUrl('user/admin/add'));
+
+            // '/portfolio/:alias/:category' => 'portfolio/default/view'
+            $this->assertEquals($base . '/portfolio/toto/5', $this->router->getUrl(
                 'portfolio/default/view',
                 ['category' => 5, 'alias' => 'toto']
             ));
 
-            // '^/page-1' => 'page/default/view|alias=page-1'
-            $this->assertEquals($base . '/page-1',  $router->getUrl('page/default/view', ['alias' => 'page-1']));
+            // '/admin/:module/:action' => ':module/admin/:action'
+            $this->assertEquals($base . '/admin/blog/index', $this->router->getUrl('blog/admin/index'));
+            $this->assertEquals($base . '/admin/events/add', $this->router->getUrl('events/admin/add'));
 
-            // '^/page-2' => 'page/default/view|alias=page-2',
-            $this->assertEquals($base . '/page-2',  $router->getUrl('page/default/view', ['alias' => 'page-2']));
+            // '/:page => 'page/default/view'
+            $this->assertEquals($base . '/page-1',  $this->router->getUrl('page/default/view', ['page' => 'page-1']));
+            $this->assertEquals($base . '/page-2',  $this->router->getUrl('page/default/view', ['page' => 'page-2']));
 
-            // '^/([\w-]+)$' => 'page/default/view|alias=$1',
-            $this->assertEquals($base . '/page-3',  $router->getUrl('page/default/view', ['alias' => 'page-3']));
-
-            // '^/(\w+)/(\w+)/(\w+)' => '$1/$2/$3'
-            $this->assertEquals($base . '/blog/default/index', $router->getUrl('blog/default/index'));
-
-            // '^/(\w+)/(\w+)/(\w+)' => '$1/$2/$3'
-            $this->assertEquals($base . '/blog/default/view/?id=2', $router->getUrl('blog/default/view', ['id' => 2]));
-
-            // '^/admin/(\w+)/(\w+)/(\d+)' => '$1/admin/$2|id=$3'
-            $this->assertEquals($base . '/admin/user/edit/5', $router->getUrl('user/admin/edit', ['id' => 5]));
-
-            // '^/admin/shop/(\w+)/(\w+)/(\d+)' => 'shop/admin/$1/$2|id=$3'
-            $this->assertEquals($base . '/admin/shop/products/edit/5', $router->getUrl('shop/admin/products/edit', ['id' => 5]));
-            $this->assertEquals($base . '/admin/shop/orders/delete/5', $router->getUrl('shop/admin/orders/delete', ['id' => 5]));
-            $this->assertEquals($base . '/admin/shop/coupons/edit/10', $router->getUrl('shop/admin/coupons/edit', ['id' => 10]));
-
-            // '^/events/(\w+)/(\w+)/(\d+)' => 'events/$2/$1|id=$3'
-            $this->assertEquals($base . '/events/edit/user/5', $router->getUrl('events/user/edit', ['id' => 5]));
-
-            // '^/blog/year/(\d+)$' => 'site/index/index|filter=year&slug=$1'
-            $this->assertEquals($base . '/blog/year/2021', $router->getUrl('site/index/index', ['slug' => '2021', 'filter' => 'year']));
-
-            // '^/blog/category/(\d+)$' => 'site/index/index|filter=category&slug=$1'
-            $this->assertEquals($base . '/blog/category/test', $router->getUrl('site/index/index', ['slug' => 'test', 'filter' => 'category']));
-
-            // '^/(\w+)/(\w+)/(\w+)' => '$1/$2/$3'
-            $this->assertEquals($base . '/site/index/index/?slug=test&unknown=category', $router->getUrl('site/index/index', ['slug' => 'test', 'unknown' => 'category']));
-
-            // '^/(\w+)/(\w+)/(\w+)/(\w+)' => '$1/$2/$3/$4'
-            $this->assertEquals($base . '/test/sub/test/index', $router->getUrl('test/sub/test/index'));
-
-            // '^/(\w+)/(\w+)/(\w+)/(\w+)' => '$1/$2/$3/$4'
-            $this->assertEquals($base . '/test/sub/test/index/?id=5', $router->getUrl('test/sub/test/index', ['id' => 5]));
-
-            // '^/(\w+)/(\w+)/(\w+)/(\w+)/(\w+)' => '$1/$2/$3/$4/$5'
-            $this->assertEquals($base . '/test/sub/til/test/index', $router->getUrl('test/sub/til/test/index'));
+            // '/:module/:controller/:action' => ':module/:controller/:action'
+            $this->assertEquals($base . '/events/index/view', $this->router->getUrl('events/index/view'));
         }
     }
 
     public function testGetAbsoluteUrl()
     {
-        $_SERVER['REQUEST_SCHEME'] = 'https';
-        $_SERVER['HTTP_HOST'] = 'www.sphilip.com';
+        $this->router->baseUri = '';
 
-        /* @var $router \piko\Router */
-        $router = Piko::get('router');
-        $router->baseUri = '';
-
-        // '^/user/(\d+)' => 'user/default/view|id=$1'
-        $this->assertEquals('https://www.sphilip.com/user/2',  $router->getUrl('user/default/view', ['id' => 2], true));
+        // '/user/:id' => 'user/default/view'
+        $this->assertEquals(
+            'https://www.sphilip.com/user/2',
+            $this->router->getUrl('user/default/view', ['id' => 2], true)
+        );
     }
 }

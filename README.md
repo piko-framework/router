@@ -3,7 +3,9 @@
 [![build](https://github.com/piko-framework/router/actions/workflows/php.yml/badge.svg)](https://github.com/piko-framework/router/actions/workflows/php.yml)
 [![Coverage Status](https://coveralls.io/repos/github/piko-framework/router/badge.svg?branch=main)](https://coveralls.io/github/piko-framework/router?branch=main)
 
-This router map request uris to user defined routes.
+A lightning fast router using a [radix trie](https://en.wikipedia.org/wiki/Radix_tree) to store dynamic routes.
+
+This router maps routes to user defined handlers. It can do the reverse operation (reverse routing)
 
 # Installation
 
@@ -15,55 +17,44 @@ composer require piko/router
 
 # Usage
 
-This is a basic example:
+A basic example:
 
 ```php
 use piko\Router;
 
-$router = new Router([
-     // Uri mapping to route
-    'routes' => [
-        '^/$' => 'home',
-        '^/user/(\d+)' => 'user/view|id=$1'
-    ]
-]);
+$router = new Router();
+$router->addRoute('/', 'homeView');
+$router->addRoute('/user/:id', 'userView');
 
-$_SERVER['REQUEST_URI'] = '/';
+$match = $router->resolve('/');
+echo $match->handler // homeView
 
-$route = $router->resolve(); // home
+$match = $router->resolve('/user/10'); // user/view
+echo $match->handler // userView
+echo $match->params['id'] // 10
 
-$_SERVER['REQUEST_URI'] = '/user/10';
-
-$route = $router->resolve(); // user/view
-$id = $_GET['id']; // 10
-
-// Then, you can use the route to dispatch an action in your code
+// Use of the $match->handler to dispatch an action
 // ...
 
-// The router can generate url from route
-echo $router->getUrl('home'); // /
-echo $router->getUrl('user/view', ['id' => 3]); // /user/3
+// Reverse routing
+echo $router->getUrl('homeView'); // /
+echo $router->getUrl('userView', ['id' => 3]); // /user/3
 ```
 
-Dynamic routing:
+Dynamic handlers:
 
 ```php
 use piko\Router;
 
-$router = new Router([
-    'routes' => [
-        '^/admin/(\w+)/(\w+)/(\d+)' => '$1/admin/$2|id=$3',
-    ]
-]);
+$router = new Router();
+$router->addRoute('/admin/:module/:action', ':module/admin/:action');
 
-$_SERVER['REQUEST_URI'] = '/admin/user/edit/3';
+$match = $router->resolve('/admin/user/edit/3'); 
 
-echo $router->resolve(); // user/admin/edit
-echo $_GET['id']; // 3
-
+echo $match->handler; // user/admin/edit
 echo $router->getUrl('blog/admin/edit', ['id' => 10]); // /admin/blog/edit/3
 
 ```
 
-Advanced example: [See RouterTest.php](tests/RouterTest.php)
+Advanced usage: [See RouterTest.php](tests/RouterTest.php)
 

@@ -1,14 +1,19 @@
 <?php
 
 /**
- * This file is part of Piko - Web micro framework
+ * This file is part of Piko Router
  *
  * @copyright 2019-2021 Sylvain PHILIP
- * @license LGPL-3.0; see LICENSE.txt
- * @link https://github.com/piko-framework/piko
+ * @license LGPL-3.0-or-later; see LICENSE.txt
+ * @link https://github.com/piko-framework/router
  */
 
+declare(strict_types=1);
+
 namespace piko;
+
+use piko\router\Match;
+use piko\router\RadixTrie;
 
 /**
  * Router class.
@@ -18,211 +23,299 @@ namespace piko;
 class Router extends Component
 {
     /**
-     * Name-value pair uri to routes correspondance.
-     *
-     * Each name corresponds to a regular expression of the request uri.
-     * Each value corresponds to a route replacement.
-     *
-     * eg. `'^/about$' => 'site/default/about'` means all requests corresponding to
-     * '/about' will be treated in 'about' action in the 'defaut' controller of 'site' module.
-     *
-     * eg. `'^/(\w+)/(\w+)/(\w+)' => '$1/$2/$3'` means uri part 1 is the module id,
-     * part 2, the controller id and part 3 the action id.
-     *
-     * Also route parameters could be given using pipe character after route.
-     *
-     * eg. `'^/user/(\d+)' => 'site/user/view|id=$1'` The router will populate `$_GET`
-     * with 'id' = The user id in the uri.
-     *
-     * @var array<string>
-     * @see preg_replace()
-     */
-    public $routes = [];
-
-    /**
      * Base uri
      *
      * The base uri is the base part of the request uri which shouldn't be parsed.
-     * Example for /home/blog/page : if the $baseUri is /home, the router will parse /blog/page
+     * Example for the uri /home/blog/page : if the $baseUri is /home, the router will parse /blog/page
      *
      * @var string
      */
     public $baseUri = '';
 
     /**
+     * Http protocol used (http/https)
+     *
+     * @var string
+     */
+    public $protocol;
+
+    /**
+     * Http host
+     *
+     * @var string
+     */
+    public $host;
+
+    /**
      * Internal cache for routes uris
-     * @var array<array>
+     *
+     * @var array[]
      */
     protected $cache = [];
 
     /**
-     * Resolve the application route corresponding to the request uri.
-     * The expected route scheme is : '{moduleId}/{controllerId}/{ationId}'
+     * The radix trie storage utility
      *
-     * @return string The route.
+     * @var RadixTrie
      */
-    public function resolve()
+    protected $radix;
+
+    /**
+     * Name-value pair route to handler correspondance.
+     * Each key corresponds to a route. Each value corresponds to a route handler.
+     * Routes and handlers can contain parameters. Ex:
+     * `'/user/:id' => 'usercontroller/viewAction'`
+     *
+     * @var string[]
+     */
+    protected $routes = [];
+
+    /**
+     * Name-value pair route to handler correspondance.
+     * This contains only routes with non params.
+     *
+     * @var string[]
+     */
+    protected $staticRoutes = [];
+
+    /**
+     * Name-value pair route to handler correspondance.
+     * This contains only routes composed with params. Ex:
+     * `'/:controller/:action' => ':controller/:action'`
+     *
+     * @var string[]
+     */
+    protected $fullyDynamicRoutes = [];
+
+    public function __construct(array $config = [])
     {
-        $route = '';
+        $this->radix = new RadixTrie();
 
-        $uri = str_replace($this->baseUri, '', $_SERVER['REQUEST_URI']);
-
-        if (($start = strpos($uri, '?')) !== false) {
-            $uri = substr($uri, 0, $start);
-        }
-
-        $uri = '/' . trim($uri, '/');
-
-        foreach ($this->routes as $uriPattern => $routePattern) {
-
-            $matches = [];
-
-            if (preg_match('`' . $uriPattern . '`', $uri, $matches)) {
-
-                foreach ($matches as $i => $match) {
-                    $routePattern = str_replace('$' . $i, $match, $routePattern);
-                }
-
-                $route = $routePattern;
-
-                break;
-            }
-        }
-
-        // Parse route request parameters
-        if (($start = strpos($route, '|')) !== false) {
-            $params = [];
-            parse_str(substr($route, $start + 1), $params);
-
-            foreach ($params as $k => $v) {
-                $_GET[$k] = $v;
+        if (isset($config['routes']) && is_array($config['routes'])) {
+            foreach ($config['routes'] as $route => $handler) {
+                $this->addRoute($route, $handler);
             }
 
-            $route = substr($route, 0, $start);
+            unset($config['routes']);
         }
 
-        return $route;
+        parent::__construct($config);
+    }
+
+    protected function init(): void
+    {
+        if ($this->protocol === null) {
+            $this->protocol = $_SERVER['REQUEST_SCHEME'];
+        }
+
+        if ($this->host === null) {
+            $this->host = $_SERVER['HTTP_HOST'];
+        }
     }
 
     /**
-     * Convert a route to an url.
-     *
-     * @param string $route The route given as '{moduleId}/{controllerId}/{ationId}'.
-     * @param array<string,int> $params Optional query parameters.
-     * @param boolean $absolute Optional to have an absolute url.
-     * @return string The url.
+     * @param string $route
+     * @param mixed $handler
      */
-    public function getUrl(string $route, array $params = [], $absolute = false)
+    public function addRoute(string $route, $handler): void
     {
-        $uri = '';
-        $uriParams = '';
-        $routeUris = $this->getRouteUris($route);
-        ksort($params);
+        $this->routes[$route] = $handler;
 
-        foreach ($routeUris as $uriPattern => $queryStr) {
+        if (strpos($route, ':') === false) {
+            $this->staticRoutes[$route] = $handler;
+            return;
+        }
 
-            $uri = str_replace(['^', '$'], '', $uriPattern);
-            $uriParams = $queryStr;
-            $query = [];
+        $parts = explode('/', trim($route, '/'));
+        $countParams = 0;
+
+        foreach ($parts as $part) {
+            if (strpos($part, ':') === 0) {
+                $countParams++;
+            }
+        }
+
+        if ($countParams === count($parts)) {
+            $this->fullyDynamicRoutes[$route] = $handler;
+            return;
+        }
+
+        $this->radix->insert($route, $handler);
+    }
+
+    /**
+     * Parse the route to get its corresponding handler and parameters.
+
+     * @param string $route
+     *
+     * @return Match The route Match.
+     */
+    public function resolve(string $route): Match
+    {
+        $route = str_replace($this->baseUri, '', $route);
+        $query = [];
+
+        if (($start = strpos($route, '?')) !== false) {
+            $queryStr = substr($route, $start + 1);
             parse_str($queryStr, $query);
-            $replace = [];
-            $continue = false;
+            $route = substr($route, 0, $start);
+        }
 
-            foreach ($query as $key => $val) {
-                if (isset($params[$key]) && ($pos = strpos($val, '$')) !== false) {
-                    /* When the query is dynamic.
-                     * Ex: $params == ['alias' => 'page-2'] && $query == ['alias' => '$1']
-                     */
-                    $pos = (int) $val[$pos + 1];
-                    $replace[$pos] =  $params[$key];
-                } elseif (!isset($params[$key]) || $params[$key] != $val) {
-                    /* When the query is static.
-                     * Ex: $params == ['alias' => 'page-2'] && $query == ['alias' => 'page-1']
-                     */
-                    $continue = true;
-                    break;
+        $route = '/' . trim($route, '/');
+
+        if (isset($this->staticRoutes[$route])) {
+
+            $match = new Match();
+            $match->found = true;
+            $match->handler = $this->staticRoutes[$route];
+
+            return $match;
+        }
+
+        $match = $this->radix->search($route);
+
+        if (!$match->found) {
+            $match = $this->findFullyDynamicRoute($route);
+        }
+
+        if (count($query)) {
+            foreach ($query as $key => $value) {
+                if (!isset($match->params[$key])) {
+                    $match->params[$key] = $value;
                 }
             }
+        }
 
-            if (count($replace) > 0) {
-                ksort($replace);
+        return $match;
+    }
 
-                $uri = preg_replace_callback('`\(.*?\)`', function ($matches) use (&$replace) {
-                    return array_shift($replace);
-                }, $uri);
-            }
+    protected function findFullyDynamicRoute(string $route): Match
+    {
+        $match = new Match();
+        $route = trim($route, '/');
+        $routeParts = explode('/', $route);
 
-            if (!$continue) {
+        foreach ($this->fullyDynamicRoutes as $path => $handler) {
+
+            $path = trim($path, '/');
+            $pathParts = explode('/', $path);
+
+            if (count($pathParts) == count($routeParts)) {
+
+                foreach ($pathParts as $i => $part) {
+                    $pos = strpos($part, ':');
+                    $paramName = substr($part, $pos + 1);
+                    $match->found = true;
+                    $match->handler = $handler;
+                    $match->params[$paramName] = $routeParts[$i];
+                }
+
                 break;
             }
         }
 
-        if (count($params) > 0 && $uriParams === '') {
+        if ($match->found && is_string($match->handler)) {
+            foreach ($match->params as $key => $value) {
+                $match->handler = str_replace(':' . $key, $value, $match->handler);
+            }
+        }
+
+        return $match;
+    }
+
+    /**
+     * Convert an handler to its corresponding route url (reverse routing).
+     *
+     * @param string $handler
+     * @param string[] $params Optional query parameters.
+     * @param boolean $absolute Optional to get an absolute url.
+     * @return string The corresponding url.
+     */
+    public function getUrl(string $handler, array $params = [], $absolute = false)
+    {
+        $routes = $this->gethandlerRoutes($handler);
+        $uri = '';
+
+        foreach ($routes as $route) {
+
+            $uri = $route;
+
+            if (!count($params)) {
+                break;
+            }
+
+            $routeMatch = false;
+            $routeParams = [];
+
+            foreach ($params as $key => $value) {
+                $routeMatch = strpos($route, ':' . $key) !== false;
+
+                if (!$routeMatch) {
+                    break;
+                }
+
+                $routeParams[] = $key;
+                $uri = str_replace(':' . $key, $value, $uri);
+            }
+
+            if ($routeMatch) {
+
+                foreach ($routeParams as $key) {
+                    unset($params[$key]);
+                }
+
+                break;
+            }
+        }
+
+        if (count($params)) {
             $uri .= '/?' . http_build_query($params);
         }
 
         $this->trigger('afterBuildUri', [&$uri]);
 
-        if ($absolute) {
-            return $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $this->baseUri . $uri;
-        }
-
-        return $this->baseUri . $uri;
+        return ($absolute) ? $this->protocol . '://' . $this->host . $this->baseUri . $uri : $this->baseUri . $uri;
     }
 
     /**
-     * Retrieve all the uris rattached to the route
+     * Retrieve all routes attached to the handler
      *
-     * @param string $route
-     * @return array<string>
+     * @param string $handler
+     * @return string[]
      */
-    protected function getRouteUris(string $route): array
+    protected function gethandlerRoutes(string $handler): array
     {
-        if (isset($this->cache[$route])) {
-            return $this->cache[$route];
+        if (isset($this->cache[$handler])) {
+            return $this->cache[$handler];
         }
 
-        $this->cache[$route] = [];
+        $this->cache[$handler] = [];
 
-        foreach ($this->routes as $uriPattern => $routePattern) {
+        foreach ($this->routes as $route => $handlerPattern) {
 
-            $strParams = '';
+            // Looking for dynamic handler to populate route params
+            while (is_string($handlerPattern) && ($pos = strpos($handlerPattern, ':')) !== false) {
 
-            // Remove query parameters from $routePattern
-            if (($pos = strpos($routePattern, '|')) !== false) {
-                $strParams = substr($routePattern, $pos + 1);
-                $routePattern = substr($routePattern, 0, $pos);
-            }
+                $param = substr($handlerPattern, $pos + 1);
+                $value = substr($handler, $pos);
 
-            // Looking for dynamic route
-            if (strpos($routePattern, '$') !== false) {
-
-                $routeParts = explode('/', $route);
-                $routePatternParts = explode('/', $routePattern);
-                $replace = [];
-
-                foreach ($routePatternParts as $k => &$part) {
-
-                    if (($pos = strpos($part, '$')) !== false && isset($routeParts[$k])) {
-                        $replace[(int) $part[$pos + 1]] = $routeParts[$k];
-                        $part = $routeParts[$k];
-                    }
+                if (($pos = strpos($param, '/')) !== false) {
+                    $param = substr($param, 0, $pos);
                 }
 
-                ksort($replace);
+                if (($pos = strpos($value, '/')) !== false) {
+                    $value = substr($value, 0, $pos);
+                }
 
-                $uriPattern = preg_replace_callback('`\(.*?\)`', function ($matches) use (&$replace) {
-                    return count($replace) ? array_shift($replace) : $matches[0];
-                }, $uriPattern);
-
-                $routePattern = implode('/', $routePatternParts);
+                $handlerPattern = str_replace(':' . $param, $value, $handlerPattern);
+                $route = str_replace(':' . $param, $value, $route);
             }
 
-            if ($route == $routePattern) {
-                $this->cache[$route][$uriPattern] = $strParams;
+            if ($handler == $handlerPattern) {
+                $this->cache[$handler][] = $route;
             }
         }
 
-        return $this->cache[$route];
+        return $this->cache[$handler];
     }
 }
