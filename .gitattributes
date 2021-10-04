@@ -2,6 +2,7 @@
 /.gitattributes    export-ignore
 /.github           export-ignore
 /.gitignore        export-ignore
+/phpbench.json     export-ignore
 /phpunit.xml.dist  export-ignore
 /phpstan.neon.dist export-ignore
 /phpdoc            export-ignore

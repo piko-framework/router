@@ -1,0 +1,7 @@
+{
+    "runner.bootstrap": "tests/bootstrap.php",
+    "runner.path": "tests/Benchmark",
+    "runner.file_pattern": "*.php",
+    "runner.retry_threshold": 4,
+    "runner.php_disable_ini": true
+}
