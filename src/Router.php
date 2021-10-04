@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace piko;
 
-use piko\router\Match;
+use piko\router\Matcher;
 use piko\router\RadixTrie;
 
 /**
@@ -148,9 +148,9 @@ class Router extends Component
 
      * @param string $route
      *
-     * @return Match The route Match.
+     * @return Matcher The route Match.
      */
-    public function resolve(string $route): Match
+    public function resolve(string $route): Matcher
     {
         $route = str_replace($this->baseUri, '', $route);
         $query = [];
@@ -165,7 +165,7 @@ class Router extends Component
 
         if (isset($this->staticRoutes[$route])) {
 
-            $match = new Match();
+            $match = new Matcher();
             $match->found = true;
             $match->handler = $this->staticRoutes[$route];
 
@@ -189,9 +189,9 @@ class Router extends Component
         return $match;
     }
 
-    protected function findFullyDynamicRoute(string $route): Match
+    protected function findFullyDynamicRoute(string $route): Matcher
     {
-        $match = new Match();
+        $match = new Matcher();
         $route = trim($route, '/');
         $routeParts = explode('/', $route);
 

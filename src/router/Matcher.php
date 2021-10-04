@@ -17,7 +17,7 @@ namespace piko\router;
  *
  * @author Sylvain PHILIP <contact@sphilip.com>
  */
-class Match
+class Matcher
 {
     /**
      * @var boolean

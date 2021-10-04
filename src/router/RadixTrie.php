@@ -120,11 +120,11 @@ class RadixTrie
     /**
      * @param string $route
      * @throws \RuntimeException
-     * @return Match
+     * @return Matcher
      */
-    public function search(string $route): Match
+    public function search(string $route): Matcher
     {
-        $match = new Match();
+        $match = new Matcher();
         $current = $this->root;
         $index = 0;
         $routeLen = strlen($route);
