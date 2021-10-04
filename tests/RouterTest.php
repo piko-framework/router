@@ -17,6 +17,7 @@ class RouterTest extends TestCase
         $this->router = new Router([
             'routes' => [
                 '/' => 'test/test/index',
+                '/home' => 'test/test/index',
                 '/user/:id' => 'user/default/view',
                 '/user/add' => 'user/admin/add',
                 '/partner/:name' => 150,
@@ -24,6 +25,7 @@ class RouterTest extends TestCase
                 '/portfolio/:alias/:category' => 'portfolio/default/view',
                 '/admin/:module/:action' => ':module/admin/:action',
                 '/:page' => 'page/default/view',
+                '/:category/:page' => 'page/default/view',
                 '/:module/:controller/:action' => ':module/:controller/:action',
             ]
         ]);
@@ -134,7 +136,15 @@ class RouterTest extends TestCase
 
             // '/:page => 'page/default/view'
             $this->assertEquals($base . '/page-1',  $this->router->getUrl('page/default/view', ['page' => 'page-1']));
-            $this->assertEquals($base . '/page-2',  $this->router->getUrl('page/default/view', ['page' => 'page-2']));
+            $this->assertEquals($base . '/news/page-2',  $this->router->getUrl('page/default/view', [
+                'page' => 'page-2',
+                'category' => 'news',
+            ]));
+
+            $this->assertEquals($base . '/page-2/?ref=test',  $this->router->getUrl('page/default/view', [
+                'page' => 'page-2',
+                'ref' => 'test',
+            ]));
 
             // '/:module/:controller/:action' => ':module/:controller/:action'
             $this->assertEquals($base . '/events/index/view', $this->router->getUrl('events/index/view'));

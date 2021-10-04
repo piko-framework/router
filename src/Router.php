@@ -234,37 +234,44 @@ class Router extends Component
     public function getUrl(string $handler, array $params = [], $absolute = false)
     {
         $routes = $this->gethandlerRoutes($handler);
-        $uri = '';
+        $uri = $handler;
 
-        foreach ($routes as $route) {
-
-            $uri = $route;
-
+        if (count($routes)) {
             if (!count($params)) {
-                break;
-            }
+                $uri = $routes[0];
+            } else {
+                $routeScore = [];
 
-            $routeMatch = false;
-            $routeParams = [];
+                foreach ($routes as $route) {
+                    $routeScore[$route] = 0;
+                    $routeParams = $route;
 
-            foreach ($params as $key => $value) {
-                $routeMatch = strpos($route, ':' . $key) !== false;
+                    while (($pos = strpos($routeParams, ':')) !== false) {
+                        $param = substr($routeParams, $pos + 1);
 
-                if (!$routeMatch) {
-                    break;
+                        if (($end = strpos($param, '/')) !== false) {
+                            $param = substr($param, 0, $end);
+                        }
+
+                        if (!isset($params[$param])) {
+                            $routeScore[$route]--;
+                            break;
+                        }
+
+                        $routeScore[$route]++;
+                        $routeParams = substr($routeParams, $pos + 1 + strlen($param));
+                    }
                 }
 
-                $routeParams[] = $key;
-                $uri = str_replace(':' . $key, (string) $value, $uri);
-            }
+                asort($routeScore, SORT_NUMERIC);
+                $uri = array_key_last($routeScore);
 
-            if ($routeMatch) {
-
-                foreach ($routeParams as $key) {
-                    unset($params[$key]);
+                foreach ($params as $key => $value) {
+                    if (strpos($uri, ':' . $key) !== false) {
+                        $uri = str_replace(':' . $key, (string) $value, $uri);
+                        unset($params[$key]);
+                    }
                 }
-
-                break;
             }
         }
 
