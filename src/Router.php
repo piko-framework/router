@@ -255,7 +255,7 @@ class Router extends Component
                 }
 
                 $routeParams[] = $key;
-                $uri = str_replace(':' . $key, $value, $uri);
+                $uri = str_replace(':' . $key, (string) $value, $uri);
             }
 
             if ($routeMatch) {
