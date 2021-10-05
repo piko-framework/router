@@ -21,9 +21,11 @@ class FastRoute extends AbstractRouter
      */
     public function createRouter(): void
     {
-        $this->dispatcher = cachedDispatcher(function(RouteCollector $r) {
+        $loopIteration = $this->loopIteration;
 
-            for ($i = 0; $i < 1000; $i ++) {
+        $this->dispatcher = cachedDispatcher(function(RouteCollector $r) use ($loopIteration) {
+
+            for ($i = 0; $i < $loopIteration; $i ++) {
                 $r->addRoute('GET', '/static' . $i, 'fastroute::static');
                 $r->addRoute('GET', '/dynamic' . $i . '/{id:\d+}', 'fastroute::dynamic');
             }
@@ -39,9 +41,9 @@ class FastRoute extends AbstractRouter
     {
         yield 'Best Case' => ['route' => '/static0', 'result' => 'fastroute::static'];
 
-        yield 'Average Case' => ['route' => '/static499', 'result' => 'fastroute::static'];
+        yield 'Average Case' => ['route' => '/static' . $this->avg, 'result' => 'fastroute::static'];
 
-        yield 'Worst Case' => ['route' => '/static999', 'result' => 'fastroute::static'];
+        yield 'Worst Case' => ['route' => '/static' . $this->worst, 'result' => 'fastroute::static'];
     }
 
     /**
@@ -51,9 +53,9 @@ class FastRoute extends AbstractRouter
     {
         yield 'Best Case' => ['route' => '/dynamic0/1', 'result' => 'fastroute::dynamic'];
 
-        yield 'Average Case' => ['route' => '/dynamic499/1', 'result' => 'fastroute::dynamic'];
+        yield 'Average Case' => ['route' => '/dynamic' . $this->avg . '/1', 'result' => 'fastroute::dynamic'];
 
-        yield 'Worst Case' => ['route' => '/dynamic999/1','result' => 'fastroute::dynamic'];
+        yield 'Worst Case' => ['route' => '/dynamic' . $this->worst . '/1','result' => 'fastroute::dynamic'];
     }
 
     /**

@@ -18,7 +18,7 @@ class PikoRouter extends AbstractRouter
     {
         $this->router = new Router();
 
-        for ($i = 0; $i < 1000; $i ++) {
+        for ($i = 0; $i < $this->loopIteration; $i ++) {
             $this->router->addRoute('/static' . $i, 'piko::static');
             $this->router->addRoute('/dynamic' . $i . '/:id', 'piko::dynamic');
         }
@@ -31,9 +31,9 @@ class PikoRouter extends AbstractRouter
     {
         yield 'Best Case' => ['route' => '/static0', 'result' => 'piko::static'];
 
-        yield 'Average Case' => ['route' => '/static499', 'result' => 'piko::static'];
+        yield 'Average Case' => ['route' => '/static' . $this->avg, 'result' => 'piko::static'];
 
-        yield 'Worst Case' => ['route' => '/static999', 'result' => 'piko::static'];
+        yield 'Worst Case' => ['route' => '/static' . $this->worst, 'result' => 'piko::static'];
     }
 
     /**
@@ -43,9 +43,9 @@ class PikoRouter extends AbstractRouter
     {
         yield 'Best Case' => ['route' => '/dynamic0/1', 'result' => 'piko::dynamic'];
 
-        yield 'Average Case' => ['route' => '/dynamic499/1', 'result' => 'piko::dynamic'];
+        yield 'Average Case' => ['route' => '/dynamic' . $this->avg . '/1', 'result' => 'piko::dynamic'];
 
-        yield 'Worst Case' => ['route' => '/dynamic999/1','result' => 'piko::dynamic'];
+        yield 'Worst Case' => ['route' => '/dynamic' . $this->worst . '/1','result' => 'piko::dynamic'];
     }
 
     /**

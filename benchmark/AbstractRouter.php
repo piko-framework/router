@@ -7,6 +7,20 @@ namespace bench;
  */
 abstract class AbstractRouter
 {
+    protected $loopIteration = 1000;
+    protected $avg = 0;
+    protected $worst = 0;
+
+    public function __construct()
+    {
+        if (getenv('LOOP_ITERATIONS', true)) {
+            $this->loopIteration = (int) getenv('LOOP_ITERATIONS', true);
+        }
+
+        $this->avg = $this->loopIteration / 2;
+        $this->worst = $this->loopIteration - 1;
+    }
+
     abstract public function createRouter(): void;
 
     /** @param array<string,mixed> $params */

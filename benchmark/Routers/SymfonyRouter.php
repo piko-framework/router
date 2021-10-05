@@ -32,9 +32,9 @@ class SymfonyRouter extends AbstractRouter
     {
         yield 'Best Case' => ['route' => '/static0', 'result' => 'symfony::static'];
 
-        yield 'Average Case' => ['route' => '/static499', 'result' => 'symfony::static'];
+        yield 'Average Case' => ['route' => '/static' . $this->avg, 'result' => 'symfony::static'];
 
-        yield 'Worst Case' => ['route' => '/static999', 'result' => 'symfony::static'];
+        yield 'Worst Case' => ['route' => '/static' . $this->worst, 'result' => 'symfony::static'];
     }
 
     /**
@@ -44,9 +44,9 @@ class SymfonyRouter extends AbstractRouter
     {
         yield 'Best Case' => ['route' => '/dynamic0/1', 'result' => 'symfony::dynamic'];
 
-        yield 'Average Case' => ['route' => '/dynamic499/1', 'result' => 'symfony::dynamic'];
+        yield 'Average Case' => ['route' => '/dynamic' . $this->avg .'/1', 'result' => 'symfony::dynamic'];
 
-        yield 'Worst Case' => ['route' => '/dynamic999/1','result' => 'symfony::dynamic'];
+        yield 'Worst Case' => ['route' => '/dynamic' . $this->worst . '/1','result' => 'symfony::dynamic'];
     }
 
     /**
@@ -54,10 +54,12 @@ class SymfonyRouter extends AbstractRouter
      */
     public function createRouter(): void
     {
-        $resource = static function (): RouteCollection {
+        $loopIteration = $this->loopIteration;
+
+        $resource = static function() use($loopIteration): RouteCollection {
             $collection = new RouteCollection();
 
-            for ($i = 0; $i < 1000; $i++) {
+            for ($i = 0; $i < $loopIteration ; $i++) {
                 $collection->add('static_' . $i, new Route('/static' . $i, ['handler' => 'symfony::static']));
                 $collection->add('dynamic_' . $i, new Route('/dynamic' . $i . '/{id}', ['handler' => 'symfony::dynamic']));
             }
