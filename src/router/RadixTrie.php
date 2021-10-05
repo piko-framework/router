@@ -39,6 +39,13 @@ class RadixTrie
         $this->root = new Node(true);
     }
 
+    /**
+     * Return the first mismatched letter between two words.
+     *
+     * @param string $word
+     * @param string $edgeWord
+     * @return int The position of the mismatched letter. If there is no mismatched letter, return -1
+     */
     private function getFirstMismatchLetter(string $word, string $edgeWord): int
     {
         $length = min(strlen($word), strlen($edgeWord));
@@ -53,22 +60,22 @@ class RadixTrie
     }
 
     /**
-     * Register a route/handler into the radix trie
+     * Register a path and its handler into the radix trie
      *
-     * @param string $route
+     * @param string $path
      * @param mixed $handler
      */
-    public function insert(string $route, $handler): void
+    public function insert(string $path, $handler): void
     {
-        $this->handlers[$route] = $handler;
+        $this->handlers[$path] = $handler;
         $node = $this->root;
         $index = 0;
-        $routeLen = strlen($route);
+        $pathLen = strlen($path);
 
-        while ($index < $routeLen) {
-            $transitionChar = $route[$index];
+        while ($index < $pathLen) {
+            $transitionChar = $path[$index];
             $edge = $node->getTransition($transitionChar);
-            $lastPart = substr($route, $index); // Last part of the route
+            $lastPart = substr($path, $index); // Last part of the route
 
             // There is no associated edge with the first character of the current string.
             // So simply add the rest of the string and finish
@@ -118,20 +125,22 @@ class RadixTrie
     }
 
     /**
-     * @param string $route
-     * @throws \RuntimeException
-     * @return Matcher
+     * Search for a path stored in the radix trie
+     *
+     * @param string $path The path to find
+     * @throws \RuntimeException If a parameterized path cannot be solved
+     * @return Matcher The search match
      */
-    public function search(string $route): Matcher
+    public function search(string $path): Matcher
     {
         $match = new Matcher();
         $current = $this->root;
         $index = 0;
-        $routeLen = strlen($route);
+        $pathLen = strlen($path);
         $searchPath = '';
 
-        while ($index < $routeLen) {
-            $transitionChar = $route[$index];
+        while ($index < $pathLen) {
+            $transitionChar = $path[$index];
             $edge = $current->getTransition($transitionChar);
 
             if ($edge == null) {
@@ -139,7 +148,7 @@ class RadixTrie
                 return $match;
             }
 
-            $currSubstring = substr($route, $index);
+            $currSubstring = substr($path, $index);
             $searchPath .= $edge->label;
             $label = $edge->label; // Because label could be altered by param, we work on a copy
 

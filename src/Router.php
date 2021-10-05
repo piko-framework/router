@@ -47,11 +47,11 @@ class Router extends Component
     public $host;
 
     /**
-     * Internal cache for routes uris
+     * Internal cache for routes handlers
      *
      * @var array[]
      */
-    protected $cache = [];
+    protected $cacheHandlers = [];
 
     /**
      * The radix trie storage utility
@@ -87,6 +87,26 @@ class Router extends Component
      */
     protected $fullyDynamicRoutes = [];
 
+    /**
+     * Constructor
+     *
+     * Example:
+     *
+     * ```php
+     * $router = new Router([
+     *      'baseUri' => '/subdir',
+     *      'routes' => [
+     *          '/' => 'home',
+     *          '/user/:id' => 'userView',
+     *          '/:module/:controller/:action' => ':module/:controller/:action',
+     *      ]
+     *  ]);
+     *
+     * ```
+     *
+     * @param array<string,array> $config A configuration array to set public properties and routes
+     * @see \piko\Component
+     */
     public function __construct(array $config = [])
     {
         $this->radix = new RadixTrie();
@@ -102,6 +122,10 @@ class Router extends Component
         parent::__construct($config);
     }
 
+    /**
+     * {@inheritDoc}
+     * @see \piko\Component::init()
+     */
     protected function init(): void
     {
         if ($this->protocol === null) {
@@ -114,19 +138,21 @@ class Router extends Component
     }
 
     /**
-     * @param string $route
+     * Register a route path and its corresponding handler
+     *
+     * @param string $path
      * @param mixed $handler
      */
-    public function addRoute(string $route, $handler): void
+    public function addRoute(string $path, $handler): void
     {
-        $this->routes[$route] = $handler;
+        $this->routes[$path] = $handler;
 
-        if (strpos($route, ':') === false) {
-            $this->staticRoutes[$route] = $handler;
+        if (strpos($path, ':') === false) {
+            $this->staticRoutes[$path] = $handler;
             return;
         }
 
-        $parts = explode('/', trim($route, '/'));
+        $parts = explode('/', trim($path, '/'));
         $countParams = 0;
 
         foreach ($parts as $part) {
@@ -136,46 +162,46 @@ class Router extends Component
         }
 
         if ($countParams === count($parts)) {
-            $this->fullyDynamicRoutes[$route] = $handler;
+            $this->fullyDynamicRoutes[$path] = $handler;
             return;
         }
 
-        $this->radix->insert($route, $handler);
+        $this->radix->insert($path, $handler);
     }
 
     /**
-     * Parse the route to get its corresponding handler and parameters.
+     * Parse the route path and return a match instance.
 
-     * @param string $route
+     * @param string $path The route path
      *
-     * @return Matcher The route Match.
+     * @return Matcher The route match.
      */
-    public function resolve(string $route): Matcher
+    public function resolve(string $path): Matcher
     {
-        $route = str_replace($this->baseUri, '', $route);
+        $path = str_replace($this->baseUri, '', $path);
         $query = [];
 
-        if (($start = strpos($route, '?')) !== false) {
-            $queryStr = substr($route, $start + 1);
+        if (($start = strpos($path, '?')) !== false) {
+            $queryStr = substr($path, $start + 1);
             parse_str($queryStr, $query);
-            $route = substr($route, 0, $start);
+            $path = substr($path, 0, $start);
         }
 
-        $route = '/' . trim($route, '/');
+        $path = '/' . trim($path, '/');
 
-        if (isset($this->staticRoutes[$route])) {
+        if (isset($this->staticRoutes[$path])) {
 
             $match = new Matcher();
             $match->found = true;
-            $match->handler = $this->staticRoutes[$route];
+            $match->handler = $this->staticRoutes[$path];
 
             return $match;
         }
 
-        $match = $this->radix->search($route);
+        $match = $this->radix->search($path);
 
         if (!$match->found) {
-            $match = $this->findFullyDynamicRoute($route);
+            $match = $this->findFullyDynamicRoute($path);
         }
 
         if (count($query)) {
@@ -189,25 +215,32 @@ class Router extends Component
         return $match;
     }
 
-    protected function findFullyDynamicRoute(string $route): Matcher
+    /**
+     * Search for a fully parameterized route against the route path.
+     * Ex: /:controller/:action
+     *
+     * @param string $path The route path
+     * @return Matcher The route match
+     */
+    protected function findFullyDynamicRoute(string $path): Matcher
     {
         $match = new Matcher();
-        $route = trim($route, '/');
-        $routeParts = explode('/', $route);
+        $path = trim($path, '/');
+        $pathParts = explode('/', $path);
 
-        foreach ($this->fullyDynamicRoutes as $path => $handler) {
+        foreach ($this->fullyDynamicRoutes as $route => $handler) {
 
-            $path = trim($path, '/');
-            $pathParts = explode('/', $path);
+            $route = trim($route, '/');
+            $routeParts = explode('/', $route);
 
             if (count($pathParts) == count($routeParts)) {
 
-                foreach ($pathParts as $i => $part) {
+                foreach ($routeParts as $i => $part) {
                     $pos = strpos($part, ':');
                     $paramName = substr($part, $pos + 1);
                     $match->found = true;
                     $match->handler = $handler;
-                    $match->params[$paramName] = $routeParts[$i];
+                    $match->params[$paramName] = $pathParts[$i];
                 }
 
                 break;
@@ -292,11 +325,11 @@ class Router extends Component
      */
     protected function gethandlerRoutes(string $handler): array
     {
-        if (isset($this->cache[$handler])) {
-            return $this->cache[$handler];
+        if (isset($this->cacheHandlers[$handler])) {
+            return $this->cacheHandlers[$handler];
         }
 
-        $this->cache[$handler] = [];
+        $this->cacheHandlers[$handler] = [];
 
         foreach ($this->routes as $route => $handlerPattern) {
 
@@ -319,10 +352,10 @@ class Router extends Component
             }
 
             if ($handler == $handlerPattern) {
-                $this->cache[$handler][] = $route;
+                $this->cacheHandlers[$handler][] = $route;
             }
         }
 
-        return $this->cache[$handler];
+        return $this->cacheHandlers[$handler];
     }
 }
