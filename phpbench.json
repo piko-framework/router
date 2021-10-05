@@ -1,7 +1,45 @@
 {
-    "runner.bootstrap": "tests/bootstrap.php",
-    "runner.path": "tests/Benchmark",
+    "runner.bootstrap": "vendor/autoload.php",
+    "runner.path": "benchmark/Routers",
     "runner.file_pattern": "*.php",
     "runner.retry_threshold": 4,
-    "runner.php_disable_ini": true
+    "runner.php_disable_ini": true,
+    "core.extensions": ["bench\\Report\\GnuplotRenderer"],
+    "report.outputs": {
+         "gnuplotdata": {
+             "extends": "delimited",
+             "delimiter": "\t",
+             "file": "benchmark.csv"
+         }
+    },
+    "report.generators": {
+         "chart": {
+            "generator": "component",
+            "components": [
+                {
+                    "component": "bar_chart_aggregate",
+                    "title": "Routers benchmark",
+                    "x_partition": ["subject_name", "variant_name"],
+                    "bar_partition": ["benchmark_name"],
+                    "y_expr": "mode(partition[\"result_time_avg\"])",
+                    "y_axes_label": "yValue as time precision 1"
+                }
+            ]
+        },
+        "table": {
+            "generator": "component",
+            "components": [
+                {
+                    "component": "table_aggregate",
+                    "partition": ["benchmark_name", "subject_name", "variant_name"],
+                    "row": {
+                        "router": "first(first(partition['subject_groups']))",
+                        "test": "first(partition['variant_name'])",
+                        "time_avg": "first(partition['result_time_avg'])",
+                        "memory": "first(partition['result_mem_peak']) / 1000000"
+                    }
+                }
+            ]
+        }
+    }
 }

@@ -2,16 +2,15 @@
 
 declare(strict_types=1);
 
-namespace tests\Benchmark;
+namespace bench\Routers;
 
-use tests\AbstractRouter;
+use bench\AbstractRouter;
 use piko\Router;
-use function assert;
 
 /**
  * @Groups({"piko-router", "raw"})
  */
-class PikoRouterBench extends AbstractRouter
+class PikoRouter extends AbstractRouter
 {
     protected Router $router;
 

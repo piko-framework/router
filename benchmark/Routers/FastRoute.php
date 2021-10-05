@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-namespace piko\Benchmarks;
+namespace bench\Routers;
 
-use tests\AbstractRouter;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use function FastRoute\cachedDispatcher;
-use function assert;
+use bench\AbstractRouter;
 
 /**
  * @Groups({"fastroute", "cached"})
  */
-class FastRouteBench extends AbstractRouter
+class FastRoute extends AbstractRouter
 {
     protected Dispatcher $dispatcher;
 
@@ -29,7 +28,7 @@ class FastRouteBench extends AbstractRouter
                 $r->addRoute('GET', '/dynamic' . $i . '/{id:\d+}', 'fastroute::dynamic');
             }
         },[
-        'cacheFile' => __DIR__ . '/caches/fastroute.cache',
+        'cacheFile' => __DIR__ . '/../caches/fastroute.cache',
         ]);
     }
 

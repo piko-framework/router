@@ -1,5 +1,5 @@
 <?php
-namespace tests;
+namespace bench;
 
 /**
  * @Revs(1000)
