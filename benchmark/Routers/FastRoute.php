@@ -21,11 +21,11 @@ class FastRoute extends AbstractRouter
      */
     public function createRouter(): void
     {
-        $loopIteration = $this->loopIteration;
+        $loopIterations = $this->routes;
 
-        $this->dispatcher = cachedDispatcher(function(RouteCollector $r) use ($loopIteration) {
+        $this->dispatcher = cachedDispatcher(function(RouteCollector $r) use ($loopIterations) {
 
-            for ($i = 0; $i < $loopIteration; $i ++) {
+            for ($i = 0; $i < $loopIterations; $i ++) {
                 $r->addRoute('GET', '/static' . $i, 'fastroute::static');
                 $r->addRoute('GET', '/dynamic' . $i . '/{id:\d+}', 'fastroute::dynamic');
             }

@@ -54,12 +54,12 @@ class SymfonyRouter extends AbstractRouter
      */
     public function createRouter(): void
     {
-        $loopIteration = $this->loopIteration;
+        $loopIterations = $this->routes;
 
-        $resource = static function() use($loopIteration): RouteCollection {
+        $resource = static function() use($loopIterations): RouteCollection {
             $collection = new RouteCollection();
 
-            for ($i = 0; $i < $loopIteration ; $i++) {
+            for ($i = 0; $i < $loopIterations ; $i++) {
                 $collection->add('static_' . $i, new Route('/static' . $i, ['handler' => 'symfony::static']));
                 $collection->add('dynamic_' . $i, new Route('/dynamic' . $i . '/{id}', ['handler' => 'symfony::dynamic']));
             }

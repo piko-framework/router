@@ -18,7 +18,7 @@ class PikoRouter extends AbstractRouter
     {
         $this->router = new Router();
 
-        for ($i = 0; $i < $this->loopIteration; $i ++) {
+        for ($i = 0; $i < $this->routes; $i ++) {
             $this->router->addRoute('/static' . $i, 'piko::static');
             $this->router->addRoute('/dynamic' . $i . '/:id', 'piko::dynamic');
         }
