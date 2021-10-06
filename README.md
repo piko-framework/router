@@ -106,7 +106,7 @@ FastRoute
 +--------------------+--------------+-------+-----+----------+----------+--------+
 ```
 
-![Routers match against 1000 routes(benchmark/img/bench_1000_routes.png)
+![Routers match against 1000 routes](benchmark/img/bench_1000_routes.png)
 
 ### Benchmark against 5000 generated routes
 
@@ -152,4 +152,4 @@ FastRoute
 +--------------------+--------------+-------+-----+----------+-----------+--------+
 ```
 
-![Routers match against 5000 routes(benchmark/img/bench_5000_routes.png)
+![Routers match against 5000 routes](benchmark/img/bench_5000_routes.png)
