@@ -33,7 +33,7 @@
                     "partition": ["benchmark_name", "subject_name", "variant_name"],
                     "row": {
                         "router": "first(first(partition['subject_groups']))",
-                        "test": "first(partition['variant_name'])",
+                        "test": "first(partition['subject_name']) ~ ' ' ~ first(partition['variant_name'])",
                         "time_avg": "first(partition['result_time_avg'])",
                         "memory": "first(partition['result_mem_peak']) / 1000000"
                     }

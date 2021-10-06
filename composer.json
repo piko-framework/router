@@ -42,6 +42,19 @@
     "phpunit" : "phpunit",
     "phpcs" : "phpcs --standard=vendor/piko/core/coding-standard  src",
     "phpstan" : "phpstan",
-    "phpbench" : "phpbench run --report=aggregate"
+    "phpbench" : "phpbench run --revs=10000 --report='extends:aggregate,break:[\"benchmark\"]'",
+    "phpbench5000" : "ROUTES=5000 phpbench run --revs=10000 --report='extends:aggregate,break:[\"benchmark\"]'",
+    "gen_image_1000": [
+      "@phpbenchtable",
+      "@gnuplot1000"
+    ],
+    "gen_image_5000": [
+      "@phpbenchtable5000",
+      "@gnuplot5000"
+    ],
+    "phpbenchtable" : "phpbench run --revs=10000 --report=table --output=gnuplotdata",
+    "phpbenchtable5000" : "ROUTES=5000 phpbench run --revs=10000 --report=table --output=gnuplotdata",
+    "gnuplot1000" : "gnuplot -e 'set title \"Routers match against 1000 routes\"; set output \"benchmark/img/bench_1000_routes.png\"' benchmark/scripts/bench.gnu",
+    "gnuplot5000" : "gnuplot -e 'set title \"Routers match against 5000 routes\"; set output \"benchmark/img/bench_5000_routes.png\"' benchmark/scripts/bench.gnu"
   }
 }
