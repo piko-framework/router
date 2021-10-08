@@ -129,11 +129,11 @@ class Router extends Component
     protected function init(): void
     {
         if ($this->protocol === null) {
-            $this->protocol = $_SERVER['REQUEST_SCHEME'];
+            $this->protocol = $_SERVER['REQUEST_SCHEME'] ?? 'http';
         }
 
         if ($this->host === null) {
-            $this->host = $_SERVER['HTTP_HOST'];
+            $this->host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         }
     }
 
@@ -338,6 +338,10 @@ class Router extends Component
 
                 $param = substr($handlerPattern, $pos + 1);
                 $value = substr($handler, $pos);
+
+                if (!$value) {
+                    break;
+                }
 
                 if (($pos = strpos($param, '/')) !== false) {
                     $param = substr($param, 0, $pos);
