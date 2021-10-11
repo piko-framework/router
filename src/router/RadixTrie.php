@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace piko\router;
 
+use RuntimeException;
+
 /**
  * This class is an utility to insert and search routes into a radix trie structure.
  *
@@ -51,7 +53,7 @@ class RadixTrie
         $length = min(strlen($word), strlen($edgeWord));
 
         for ($i = 1; $i < $length; $i++) {
-            if ($word[$i] != $edgeWord[$i]) {
+            if ($word[$i] !== $edgeWord[$i]) {
                 return $i;
             }
         }
@@ -86,14 +88,16 @@ class RadixTrie
 
             $split = $this->getFirstMismatchLetter($lastPart, $edge->label);
 
-            if ($split == -1) {
+            if ($split === -1) {
 
-                if (strlen($lastPart) == strlen($edge->label)) {
+                if (strlen($lastPart) === strlen($edge->label)) {
                     // The edge and leftover string are the same length
                     // so finish and update the target node as a leaf node
                     $edge->targetNode->isLeaf = true;
                     break;
-                } elseif (strlen($lastPart) < strlen($edge->label)) {
+                }
+
+                if (strlen($lastPart) < strlen($edge->label)) {
                     // The leftover word is a prefix to the edge string, so split
                     // $suffix = currentEdge.label.substring(currStr.length());
                     $suffix = substr($edge->label, strlen($lastPart));
@@ -103,11 +107,11 @@ class RadixTrie
                     $edge->targetNode = $newTarget;
                     $edge->targetNode->addEdge($suffix, $afterNewTarget);
                     break;
-                } else {
-                    // strlen($currStr) > strlen($edge->label)
-                    // There is leftover string after a perfect match
-                    $split = strlen($edge->label);
                 }
+
+                // strlen($currStr) > strlen($edge->label)
+                // There is leftover string after a perfect match
+                $split = strlen($edge->label);
 
             } else {
                 // The leftover string and edge string differed, so split at point
@@ -128,7 +132,7 @@ class RadixTrie
      * Search for a path stored in the radix trie
      *
      * @param string $path The path to find
-     * @throws \RuntimeException If a parameterized path cannot be solved
+     * @throws RuntimeException If a parameterized path cannot be solved
      * @return Matcher The search match
      */
     public function search(string $path): Matcher
@@ -143,7 +147,7 @@ class RadixTrie
             $transitionChar = $path[$index];
             $edge = $current->getTransition($transitionChar);
 
-            if ($edge == null) {
+            if ($edge === null) {
                 // No match found
                 return $match;
             }
@@ -178,16 +182,14 @@ class RadixTrie
                         $parts[] = $label . $e->label;
                     }
 
-                    throw new \RuntimeException('Cannot determine param for the route parts: ' . implode(', ', $parts));
+                    throw new RuntimeException('Cannot determine param for the route parts: ' . implode(', ', $parts));
                 }
 
-                if (($pos = strpos($param, '/')) !== false) {
-                    $param = substr($param, 0, $pos);
-                }
+                // extract part before slash if exists
+                $param = strtok($param, '/');
 
-                if (($pos = strpos($value, '/')) !== false) {
-                    $value = substr($value, 0, $pos);
-                }
+                // extract part before slash if exists
+                $value = strtok($value, '/');
 
                 $match->params[$param] = $value;
                 $label = str_replace(':' . $param, $value, $label);
@@ -195,7 +197,7 @@ class RadixTrie
 
             $startWith = substr($currSubstring, 0, strlen($label));
 
-            if ($startWith != $label) {
+            if ($startWith !== $label) {
                 // No match found
                 return $match;
             }
