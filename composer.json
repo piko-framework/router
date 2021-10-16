@@ -56,5 +56,8 @@
     "phpbenchtable5000" : "ROUTES=5000 phpbench run --revs=10000 --report=table --output=gnuplotdata",
     "gnuplot1000" : "gnuplot -e 'set title \"Routers match against 1000 routes\"; set output \"benchmark/img/bench_1000_routes.png\"' benchmark/scripts/bench.gnu",
     "gnuplot5000" : "gnuplot -e 'set title \"Routers match against 5000 routes\"; set output \"benchmark/img/bench_5000_routes.png\"' benchmark/scripts/bench.gnu"
+  },
+  "config": {
+      "sort-packages": true
   }
 }
