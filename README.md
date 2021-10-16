@@ -27,11 +27,11 @@ $router->addRoute('/', 'homeView');
 $router->addRoute('/user/:id', 'userView');
 
 $match = $router->resolve('/');
-echo $match->handler // homeView
+echo $match->handler; // homeView
 
 $match = $router->resolve('/user/10');
-echo $match->handler // userView
-echo $match->params['id'] // 10
+echo $match->handler; // userView
+echo $match->params['id']; // 10
 
 // Use of the $match->handler to dispatch an action
 // ...
@@ -49,7 +49,7 @@ use piko\Router;
 $router = new Router();
 $router->addRoute('/admin/:module/:action', ':module/admin/:action');
 
-$match = $router->resolve('/admin/user/add'); 
+$match = $router->resolve('/admin/user/add');
 echo $match->handler; // user/admin/add
 
 echo $router->getUrl('blog/admin/index'); // /admin/blog/index
