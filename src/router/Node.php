@@ -3,7 +3,7 @@
 /**
  * This file is part of Piko Router
  *
- * @copyright 2019-2021 Sylvain PHILIP
+ * @copyright 2019-2022 Sylvain PHILIP
  * @license LGPL-3.0-or-later; see LICENSE.txt
  * @link https://github.com/piko-framework/router
  */
