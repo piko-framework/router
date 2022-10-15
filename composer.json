@@ -20,7 +20,11 @@
   },
   "autoload" : {
       "psr-4" : {
-        "piko\\" : "src",
+        "piko\\" : "src"
+    }
+  },
+  "autoload-dev" : {
+      "psr-4" : {
         "bench\\" : "benchmark"
     }
   },
