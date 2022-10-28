@@ -3,14 +3,14 @@
 /**
  * This file is part of Piko Router
  *
- * @copyright 2019-2022 Sylvain PHILIP
+ * @copyright 2022 Sylvain PHILIP
  * @license LGPL-3.0-or-later; see LICENSE.txt
  * @link https://github.com/piko-framework/router
  */
 
 declare(strict_types=1);
 
-namespace piko\router;
+namespace Piko\Router;
 
 /**
  * This class represents a trie edge.

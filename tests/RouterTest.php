@@ -1,6 +1,6 @@
 <?php
 use PHPUnit\Framework\TestCase;
-use piko\Router;
+use Piko\Router;
 
 class RouterTest extends TestCase
 {
@@ -11,10 +11,9 @@ class RouterTest extends TestCase
 
     protected function setUp(): void
     {
-        $_SERVER['REQUEST_SCHEME'] = 'https';
-        $_SERVER['HTTP_HOST'] = 'www.sphilip.com';
-
         $this->router = new Router([
+            'protocol' => 'https',
+            'host' => 'www.sphilip.com',
             'routes' => [
                 '/' => 'test/test/index',
                 '/home' => 'test/test/index',

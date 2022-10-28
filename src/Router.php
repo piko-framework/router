@@ -10,18 +10,21 @@
 
 declare(strict_types=1);
 
-namespace piko;
+namespace Piko;
 
-use piko\router\Matcher;
-use piko\router\RadixTrie;
+use Piko\Router\Matcher;
+use Piko\Router\RadixTrie;
+use Piko\Router\AfterUriBuiltEvent;
 
 /**
  * Router class.
  *
  * @author Sylvain PHILIP <contact@sphilip.com>
  */
-class Router extends Component
+class Router
 {
+    use EventHandlerTrait;
+
     /**
      * Base uri
      *
@@ -37,14 +40,14 @@ class Router extends Component
      *
      * @var string
      */
-    public $protocol;
+    public $protocol = 'http';
 
     /**
      * Http host
      *
      * @var string
      */
-    public $host;
+    public $host = '127.0.0.1';
 
     /**
      * Internal cache for routes handlers
@@ -104,8 +107,7 @@ class Router extends Component
      *
      * ```
      *
-     * @param array<string,array> $config A configuration array to set public properties and routes
-     * @see \piko\Component
+     * @param array<string, mixed> $config A configuration array to set public properties and routes
      */
     public function __construct(array $config = [])
     {
@@ -119,23 +121,9 @@ class Router extends Component
             unset($config['routes']);
         }
 
-        parent::__construct($config);
+        Utils::configureObject($this, $config);
     }
 
-    /**
-     * {@inheritDoc}
-     * @see \piko\Component::init()
-     */
-    protected function init(): void
-    {
-        if ($this->protocol === null) {
-            $this->protocol = $_SERVER['REQUEST_SCHEME'] ?? 'http';
-        }
-
-        if ($this->host === null) {
-            $this->host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        }
-    }
 
     /**
      * Register a route path and its corresponding handler
@@ -312,9 +300,12 @@ class Router extends Component
             $uri .= '/?' . http_build_query($params);
         }
 
-        $this->trigger('afterBuildUri', [&$uri]);
+        $event = new AfterUriBuiltEvent($uri);
 
-        return ($absolute) ? $this->protocol . '://' . $this->host . $this->baseUri . $uri : $this->baseUri . $uri;
+        $this->trigger($event);
+
+        return ($absolute) ?
+        $this->protocol . '://' . $this->host . $this->baseUri . $event->uri : $this->baseUri . $event->uri;
     }
 
     /**

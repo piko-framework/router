@@ -1,7 +1,7 @@
 <?php
 use PHPUnit\Framework\TestCase;
 
-use piko\router\RadixTrie;
+use Piko\Router\RadixTrie;
 
 class RadixTest extends TestCase
 {
