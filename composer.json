@@ -16,7 +16,7 @@
   "license" : "LGPL-3.0-or-later",
   "require" : {
     "php" : ">=7.1.0",
-    "piko/core": "^2.0"
+    "piko/core": "^2.1"
   },
   "autoload" : {
       "psr-4" : {

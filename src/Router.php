@@ -121,7 +121,7 @@ class Router
             unset($config['routes']);
         }
 
-        Utils::configureObject($this, $config);
+        \Piko::configureObject($this, $config);
     }
 
 
