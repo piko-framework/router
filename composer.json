@@ -1,10 +1,11 @@
 {
   "name" : "piko/router",
-  "description" : "A fast micro router used in Piko framework",
+  "description" : "One of the fastest PHP router, using a radix trie to retrieve routes",
   "keywords" : [
     "micro-router",
     "micro",
-    "router"
+    "router",
+    "radix"
   ],
   "authors" : [{
       "name" : "Sylvain Philip",
