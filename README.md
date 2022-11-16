@@ -20,7 +20,7 @@ composer require piko/router
 A basic example:
 
 ```php
-use piko\Router;
+use Piko\Router;
 
 $router = new Router();
 $router->addRoute('/', 'homeView');
@@ -44,7 +44,7 @@ echo $router->getUrl('userView', ['id' => 3]); // /user/3
 Dynamic handlers:
 
 ```php
-use piko\Router;
+use Piko\Router;
 
 $router = new Router();
 $router->addRoute('/admin/:module/:action', ':module/admin/:action');
