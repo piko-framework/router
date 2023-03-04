@@ -30,7 +30,7 @@ class Matcher
     public $handler;
 
     /**
-     * @var string[]
+     * @var array<string|int, string>
      */
     public $params = [];
 }

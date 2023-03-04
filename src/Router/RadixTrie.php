@@ -32,7 +32,7 @@ class RadixTrie
     /**
      * Registered $handlers
      *
-     * @var string[]
+     * @var array<string, mixed>
      */
     public $handlers = [];
 

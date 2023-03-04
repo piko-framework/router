@@ -52,7 +52,7 @@ class Router
     /**
      * Internal cache for routes handlers
      *
-     * @var array[]
+     * @var array<string, array<string>>
      */
     protected $cacheHandlers = [];
 
@@ -69,7 +69,7 @@ class Router
      * Routes and handlers can contain parameters. Ex:
      * `'/user/:id' => 'usercontroller/viewAction'`
      *
-     * @var string[]
+     * @var array<string, mixed>
      */
     protected $routes = [];
 
@@ -77,7 +77,7 @@ class Router
      * Name-value pair route to handler correspondance.
      * This contains only routes with non params.
      *
-     * @var string[]
+     * @var array<string, mixed>
      */
     protected $staticRoutes = [];
 
@@ -86,7 +86,7 @@ class Router
      * This contains only routes composed with params. Ex:
      * `'/:controller/:action' => ':controller/:action'`
      *
-     * @var string[]
+     * @var array<string, mixed>
      */
     protected $fullyDynamicRoutes = [];
 
@@ -194,6 +194,8 @@ class Router
 
         if (count($query)) {
             foreach ($query as $key => $value) {
+                assert(is_string($value));
+
                 if (!isset($match->params[$key])) {
                     $match->params[$key] = $value;
                 }
