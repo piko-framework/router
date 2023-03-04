@@ -300,8 +300,8 @@ class Router
             $uri .= '/?' . http_build_query($params);
         }
 
+        $uri =  '/' . ltrim($uri, '/');
         $event = new AfterUriBuiltEvent($uri);
-
         $this->trigger($event);
 
         return ($absolute) ?
